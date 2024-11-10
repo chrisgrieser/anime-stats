@@ -13,10 +13,10 @@ import requests
 # CONFIG
 start_year = 2014
 end_year = 2024
-genre_id = 62  # 62 = isekai, see https://api.jikan.moe/v4/genres/anime
-genre_name = "isekai"
-base_api = "https://api.jikan.moe/v4"
-
+genre_id = 35  # 62 = isekai, see https://api.jikan.moe/v4/genres/anime
+genre_name = "Romance"
+genre_exclude_id = 4
+genre_exclude_name = "Comedy"
 
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -68,6 +68,8 @@ def get_data_per_year(genre_id: int) -> dict[int, YearData]:
         total_for_year = make_jikan_api_call(api_url)
 
         api_url += api_url + f"&genres={genre_id}"
+        if genre_exclude_id:
+            api_url += f"&exclude_genres={genre_exclude_id}"
         of_genre_for_year = make_jikan_api_call(api_url)
 
         year_data[year] = {
@@ -82,7 +84,11 @@ def get_data_per_year(genre_id: int) -> dict[int, YearData]:
 if __name__ == "__main__":
     year_data = get_data_per_year(genre_id)
 
-    to_print: list[str] = [(f"{genre_name}s per year").upper()]
+    header = [genre_name, "per year"]
+    if genre_exclude_id:
+        header.append(f"(excluding {genre_exclude_name})")
+    to_print: list[str] = [" ".join(header).upper()]
+
     for year, data in year_data.items():
         of_genre, total = data["of_genre"], data["total"]
         share = round((of_genre / total) * 100)
