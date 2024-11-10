@@ -69,7 +69,7 @@ def get_data_per_year(genre_id: int) -> dict[int, YearData]:
 
         api_url += api_url + f"&genres={genre_id}"
         if genre_exclude_id:
-            api_url += f"&exclude_genres={genre_exclude_id}"
+            api_url += f"&genres_exclude={genre_exclude_id}"
         of_genre_for_year = make_jikan_api_call(api_url)
 
         year_data[year] = {
