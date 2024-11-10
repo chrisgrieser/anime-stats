@@ -1,8 +1,11 @@
 # DOCS https://microsoft.github.io/pyright/#/configuration
-[tool.pyright] # also used by basedpyright
+# https://docs.basedpyright.com/v1.21.0/configuration/config-files/
+[tool.basedpyright] # also used by basedpyright
 venvPath = "."
 venv = ".venv"
-typeCheckingMode = "strict"
+typeCheckingMode = "recommended" # https://docs.basedpyright.com/v1.21.0/configuration/config-files/#diagnostic-settings-defaults
+
+reportUnusedVariable = "information"
 
 [tool.python.analysis]
 diagnosticMode = "workspace"
@@ -12,10 +15,7 @@ diagnosticMode = "workspace"
 # DOCS https://beta.ruff.rs/docs/rules/
 [tool.ruff]
 line-length = 100
-exclude = [
-	".venv",
-	"typings/*.pyi"
-]
+exclude = [".venv", "typings/*.pyi"]
 select = ["ALL"]
 ignore = [
 	"T201",   # print statements
