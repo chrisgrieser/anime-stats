@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-import time
+from time import sleep
 from typing import TypedDict
 
 import requests
@@ -20,11 +20,20 @@ base_api = "https://api.jikan.moe/v4"
 
 # ──────────────────────────────────────────────────────────────────────────────
 
+call_count = 0
+
 
 def make_jikan_api_call(url: str) -> object:
     """Make a jikan api call."""
     # wait for rate limit, 3 calls per second https://docs.api.jikan.moe/#section/Information/Rate-Limiting
-    time.sleep(1)
+    sleep(1)
+
+    # simple progress bar
+    global call_count  # noqa: PLW0603
+    call_count += 1
+    _ = sys.stdout.write("\r")
+    _ = sys.stdout.write("▱" * call_count)
+    _ = sys.stdout.flush()
 
     # make request
     response = requests.get(url, timeout=10)
@@ -53,6 +62,8 @@ def get_data_per_year(genre_id: int) -> dict[int, YearData]:
     year_data: dict[int, YearData] = {}
 
     for year in range(start_year, end_year + 1):
+        base_api = "https://api.jikan.moe/v4"
+
         api_url = f"{base_api}/anime?start_date={year}-01-01&end_date={year}-12-31&type=tv"
         total_for_year = make_jikan_api_call(api_url)
 
@@ -77,4 +88,5 @@ if __name__ == "__main__":
         share = round((of_genre / total) * 100)
         to_print.append(f"{year}: {of_genre}/{total} ({share}%)")
 
+    print()
     print("\n".join(to_print))
