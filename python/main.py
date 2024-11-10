@@ -26,7 +26,7 @@ call_count = 0
 def make_jikan_api_call(url: str) -> object:
     """Make a jikan api call."""
     # wait for rate limit, 3 calls per second https://docs.api.jikan.moe/#section/Information/Rate-Limiting
-    sleep(1)
+    sleep(0.8)
 
     # simple progress bar
     global call_count  # noqa: PLW0603
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     header = [genre_name, "per year"]
     if genre_exclude_id:
         header.append(f"(excluding {genre_exclude_name})")
-    to_print: list[str] = [" ".join(header).upper()]
+    to_print: list[str] = [" ".join(header)]
 
     for year, data in year_data.items():
         of_genre, total = data["of_genre"], data["total"]
