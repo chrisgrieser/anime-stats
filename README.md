@@ -16,12 +16,13 @@ python3 -m python.main "$genre"
 ```bash
 # using `just`
 just init
-just genre="Romance"
+just genre="Romance" # available genres: https://api.jikan.moe/v4/genres/anime
+just run_fzf # using `fzf` and `yq`, select a genre interactively
 ```
 
 ## Example Output
 ```txt
-ISEKAIS PER YEAR
+Isakais per year
 2014: 2/187 (1%)
 2015: 4/204 (2%)
 2016: 7/229 (3%)
