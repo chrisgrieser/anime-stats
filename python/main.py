@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import sys
+from sys import exit, stdout
 from time import sleep
 from typing import TypedDict
 
@@ -15,8 +15,10 @@ start_year = 2014
 end_year = 2024
 genre_id = 35  # 62 = isekai, see https://api.jikan.moe/v4/genres/anime
 genre_name = "Romance"
-genre_exclude_id = 4
-genre_exclude_name = "Comedy"
+
+# disabled when set to falsy values
+genre_exclude_id = 0
+genre_exclude_name = ""
 
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -31,16 +33,16 @@ def make_jikan_api_call(url: str) -> object:
     # simple progress bar
     global call_count  # noqa: PLW0603
     call_count += 1
-    _ = sys.stdout.write("\r")
-    _ = sys.stdout.write("▱" * call_count)
-    _ = sys.stdout.flush()
+    _ = stdout.write("\r")
+    _ = stdout.write("▱" * call_count)
+    _ = stdout.flush()
 
     # make request
     response = requests.get(url, timeout=10)
     http_status_success = 200
     if response.status_code != http_status_success:
         print("Error:", response.status_code, response.reason)
-        sys.exit(1)
+        exit(1)
     return response.json()  # pyright: ignore [reportAny]
 
 
@@ -80,10 +82,8 @@ def get_data_per_year(genre_id: int) -> dict[int, YearData]:
     return year_data
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-if __name__ == "__main__":
-    year_data = get_data_per_year(genre_id)
-
+def print_result(year_data: dict[int, YearData]) -> None:
+    """Print the result."""
     header = [genre_name, "per year"]
     if genre_exclude_id:
         header.append(f"(excluding {genre_exclude_name})")
@@ -94,5 +94,12 @@ if __name__ == "__main__":
         share = round((of_genre / total) * 100)
         to_print.append(f"{year}: {of_genre}/{total} ({share}%)")
 
-    print()
-    print("\n".join(to_print))
+    _ = stdout.write("\r")
+    _ = stdout.write("\n" + "\n".join(to_print))
+    _ = stdout.flush()
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+if __name__ == "__main__":
+    year_data = get_data_per_year(genre_id)
+    print_result(year_data)
