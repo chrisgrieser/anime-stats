@@ -34,7 +34,7 @@ def make_jikan_api_call(url: str, api_cache: dict[str, object]) -> tuple[object,
         return api_cache[url], api_cache
 
     # wait for rate limit, 3 calls per second https://docs.api.jikan.moe/#section/Information/Rate-Limiting
-    sleep(0.5)
+    sleep(0.65)
 
     # make request
     response = requests.get(url, timeout=10)
