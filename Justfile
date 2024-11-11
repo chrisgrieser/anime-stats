@@ -10,6 +10,10 @@ run_fzf:
     if test -t 1 ; then
         genre=$(curl --silent "https://api.jikan.moe/v4/genres/anime" |
             yq --input-format=json '.data[] | .name' | fzf)
+        if test -z "$genre" ; then
+            echo "No genre selected, aborting."
+            return
+        fi
     else
         genre="{{ genre }}"
         echo "No Terminal detected, using default genre: $genre"
