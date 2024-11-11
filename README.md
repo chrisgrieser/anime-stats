@@ -9,13 +9,14 @@ source ./.venv/bin/activate
 python3 -m pip install -r requirements.txt
 
 # run
-python3 -m python.main
+genre="Romance" # available genres: https://api.jikan.moe/v4/genres/anime
+python3 -m python.main "$genre"
 ```
 
 ```bash
 # using `just`
 just init
-just run
+just genre="Romance"
 ```
 
 ## Example Output

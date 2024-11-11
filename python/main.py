@@ -2,21 +2,19 @@
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
-from sys import exit
+import sys
 from time import sleep
 from typing import TypedDict
 
 import requests
+
+from . import caching
 
 # ──────────────────────────────────────────────────────────────────────────────
 
 # CONFIG
 start_year = 2014
 end_year = 2024
-genre_id = 4  # 62 = isekai, see https://api.jikan.moe/v4/genres/anime
-genre_name = "Comedy"
 
 # disabled when set to falsy values
 genre_exclude_id = 0
@@ -45,7 +43,7 @@ def make_jikan_api_call(url: str, api_cache: dict[str, object]) -> tuple[object,
     http_status_success = 200
     if response.status_code != http_status_success:
         print("Error:", response.status_code, response.reason)
-        exit(1)
+        sys.exit(1)
 
     api_cache[url] = response.json()
     return response.json(), api_cache
@@ -70,16 +68,8 @@ def get_data_per_year(genre_id: int) -> dict[int, YearData]:
 
     for year in range(start_year, end_year + 1):
         base_api = "https://api.jikan.moe/v4"
-        cache = "./cache/api_cache.json"
+        api_cache = caching.read()
 
-        # cache
-        if Path(cache).exists():
-            with Path(cache).open("r") as f:
-                api_cache: dict[str, object] = json.load(f)
-        else:
-            api_cache = {}
-
-        # make API calls
         api_url = f"{base_api}/anime?start_date={year}-01-01&end_date={year}-12-31&type=tv"
         total_for_year, api_cache = make_jikan_api_call(api_url, api_cache)
 
@@ -93,12 +83,33 @@ def get_data_per_year(genre_id: int) -> dict[int, YearData]:
             "total": total_for_year["pagination"]["items"]["total"],  # pyright: ignore [reportIndexIssue]
         }
 
-        # write cache
-        Path.mkdir(Path(cache).parent, exist_ok=True)
-        with Path(cache).open("w") as f:
-            json.dump(api_cache, f)
+        caching.write(api_cache)
 
     return year_data
+
+
+def get_genre_id(genre_name: str) -> int:
+    """Get MAL genre id from genre name (case insensitive).
+
+    https://docs.api.jikan.moe/#tag/genres/operation/getAnimeGenres
+    """
+    cache = caching.read()
+    genre_data, api_cache = make_jikan_api_call("https://api.jikan.moe/v4/genres/anime", cache)
+    genre: int | None = next(  # pyright: ignore [reportUnknownVariableType]
+        (
+            el
+            for el in genre_data["data"]  # pyright: ignore [reportIndexIssue,reportUnknownArgumentType,reportUnknownVariableType]
+            if el["name"].lower() == genre_name.lower()  # pyright: ignore [reportUnknownMemberType]
+        ),
+        None,
+    )
+    if not genre:
+        print("\r", flush=True, end="")
+        print(f'Genre "{genre_name}" not found')
+        sys.exit(1)
+
+    caching.write(api_cache)
+    return genre["mal_id"]  # pyright: ignore [reportUnknownVariableType]
 
 
 def print_result(year_data: dict[int, YearData]) -> None:
@@ -123,5 +134,7 @@ def print_result(year_data: dict[int, YearData]) -> None:
 
 # ──────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
+    genre_name = sys.argv[1]
+    genre_id = get_genre_id(genre_name)
     year_data = get_data_per_year(genre_id)
     print_result(year_data)
