@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from sys import exit, stdout
+import json
+from pathlib import Path
+from sys import exit
 from time import sleep
 from typing import TypedDict
 
@@ -13,8 +15,8 @@ import requests
 # CONFIG
 start_year = 2014
 end_year = 2024
-genre_id = 35  # 62 = isekai, see https://api.jikan.moe/v4/genres/anime
-genre_name = "Romance"
+genre_id = 4  # 62 = isekai, see https://api.jikan.moe/v4/genres/anime
+genre_name = "Comedy"
 
 # disabled when set to falsy values
 genre_exclude_id = 0
@@ -22,20 +24,21 @@ genre_exclude_name = ""
 
 # ──────────────────────────────────────────────────────────────────────────────
 
-call_count = 0
 
+def make_jikan_api_call(url: str, api_cache: dict[str, object]) -> tuple[object, dict[str, object]]:
+    """Check cache, if API call is not in cache, make a jikan API call.
 
-def make_jikan_api_call(url: str) -> object:
-    """Make a jikan api call."""
+    Return the response and the updated cache.
+    """
+    # simple progress bar
+    progress_char = "▰" if url in api_cache else "▱"
+    print(progress_char, end="", flush=True)
+
+    if url in api_cache:
+        return api_cache[url], api_cache
+
     # wait for rate limit, 3 calls per second https://docs.api.jikan.moe/#section/Information/Rate-Limiting
     sleep(0.8)
-
-    # simple progress bar
-    global call_count  # noqa: PLW0603
-    call_count += 1
-    _ = stdout.write("\r")
-    _ = stdout.write("▱" * call_count)
-    _ = stdout.flush()
 
     # make request
     response = requests.get(url, timeout=10)
@@ -43,7 +46,9 @@ def make_jikan_api_call(url: str) -> object:
     if response.status_code != http_status_success:
         print("Error:", response.status_code, response.reason)
         exit(1)
-    return response.json()  # pyright: ignore [reportAny]
+
+    api_cache[url] = response.json()
+    return response.json(), api_cache
 
 
 class YearData(TypedDict):
@@ -65,25 +70,39 @@ def get_data_per_year(genre_id: int) -> dict[int, YearData]:
 
     for year in range(start_year, end_year + 1):
         base_api = "https://api.jikan.moe/v4"
+        cache = "./cache/api_cache.json"
 
+        # cache
+        if Path(cache).exists():
+            with Path(cache).open("r") as f:
+                api_cache: dict[str, object] = json.load(f)
+        else:
+            api_cache = {}
+
+        # make API calls
         api_url = f"{base_api}/anime?start_date={year}-01-01&end_date={year}-12-31&type=tv"
-        total_for_year = make_jikan_api_call(api_url)
+        total_for_year, api_cache = make_jikan_api_call(api_url, api_cache)
 
         api_url += api_url + f"&genres={genre_id}"
         if genre_exclude_id:
             api_url += f"&genres_exclude={genre_exclude_id}"
-        of_genre_for_year = make_jikan_api_call(api_url)
+        of_genre_for_year, api_cache = make_jikan_api_call(api_url, api_cache)
 
         year_data[year] = {
             "of_genre": of_genre_for_year["pagination"]["items"]["total"],  # pyright: ignore [reportIndexIssue]
             "total": total_for_year["pagination"]["items"]["total"],  # pyright: ignore [reportIndexIssue]
         }
 
+        # write cache
+        Path.mkdir(Path(cache).parent, exist_ok=True)
+        with Path(cache).open("w") as f:
+            json.dump(api_cache, f)
+
     return year_data
 
 
 def print_result(year_data: dict[int, YearData]) -> None:
-    """Print the result."""
+    """Remove the progress bar and print the result."""
     header = [genre_name, "per year"]
     if genre_exclude_id:
         header.append(f"(excluding {genre_exclude_name})")
@@ -94,9 +113,12 @@ def print_result(year_data: dict[int, YearData]) -> None:
         share = round((of_genre / total) * 100)
         to_print.append(f"{year}: {of_genre}/{total} ({share}%)")
 
-    _ = stdout.write("\r")
-    _ = stdout.write("\n" + "\n".join(to_print))
-    _ = stdout.flush()
+    # remove progress bar
+    print("\r", end="")
+    print(" " * len(to_print * 2), end="")
+    print("\r", flush=True, end="")
+
+    print("\n".join(to_print))
 
 
 # ──────────────────────────────────────────────────────────────────────────────
