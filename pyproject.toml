@@ -7,6 +7,10 @@ typeCheckingMode = "recommended" # https://docs.basedpyright.com/v1.21.0/configu
 
 reportUnusedVariable = "information"
 
+# project specific
+reportUnknownMemberType = "none" # annoying with `mathplotlib`
+reportUnusedCallResult = "none" # annoying with `mathplotlib`
+
 [tool.python.analysis]
 diagnosticMode = "workspace"
 

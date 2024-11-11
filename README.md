@@ -37,4 +37,4 @@ Isakais per year
 ```
 
 ## Visualization
-TODO
+![showcase for isekai per year](./showcase/isekai-per-year.webp)

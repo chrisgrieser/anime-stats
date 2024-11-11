@@ -7,6 +7,7 @@ import sys
 from time import sleep
 from typing import TypedDict
 
+import matplotlib.pyplot as plt
 import requests
 
 from . import caching
@@ -53,6 +54,7 @@ class YearData(TypedDict):
 
     total: int
     of_genre: int
+    percent: float
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -80,9 +82,13 @@ def get_data_per_year(genre_name: str, start_year: int) -> dict[int, YearData]:
             api_url += f"&genres_exclude={genre_exclude_id}"
         of_genre_for_year, api_cache = make_jikan_api_call(api_url, api_cache)
 
+        of_genre: int = of_genre_for_year["pagination"]["items"]["total"]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
+        total: int = total_for_year["pagination"]["items"]["total"]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
+
         year_data[year] = {
-            "of_genre": of_genre_for_year["pagination"]["items"]["total"],  # pyright: ignore [reportIndexIssue]
-            "total": total_for_year["pagination"]["items"]["total"],  # pyright: ignore [reportIndexIssue]
+            "of_genre": of_genre,
+            "total": total,
+            "percent": round(of_genre / total * 100),  # pyright: ignore [reportUnknownArgumentType]
         }
 
         caching.write(api_cache)
@@ -101,7 +107,7 @@ def get_genre_id(genre_name: str) -> int:
         (
             el
             for el in genre_data["data"]  # pyright: ignore [reportIndexIssue,reportUnknownArgumentType,reportUnknownVariableType]
-            if el["name"].lower() == genre_name.lower()  # pyright: ignore [reportUnknownMemberType]
+            if el["name"].lower() == genre_name.lower()
         ),
         None,
     )
@@ -114,17 +120,24 @@ def get_genre_id(genre_name: str) -> int:
     return genre["mal_id"]  # pyright: ignore [reportUnknownVariableType]
 
 
-def print_result(year_data: dict[int, YearData]) -> None:
-    """Remove the progress bar and print the result."""
-    header = [f'"{genre_name}"', "per year"]
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+def get_header(genre_name: str) -> str:
+    """Get the header for the output."""
+    header_parts = [f'"{genre_name}"', "per year"]
     if genre_exclude_id:
-        header.append(f"(excluding {genre_exclude_name})")
-    to_print: list[str] = [" ".join(header)]
+        header_parts.append(f"(excluding {genre_exclude_name})")
+    return " ".join(header_parts)
+
+
+def print_result_to_terminal(year_data: dict[int, YearData], header: str) -> None:
+    """Remove the progress bar and print the result."""
+    to_print: list[str] = [header]
 
     for year, data in year_data.items():
-        of_genre, total = data["of_genre"], data["total"]
-        share = round((of_genre / total) * 100)
-        to_print.append(f"{year}: {of_genre}/{total} ({share}%)")
+        of_genre, total, percent = data["of_genre"], data["total"], data["percent"]
+        to_print.append(f"{year}: {of_genre}/{total} ({percent}%)")
 
     # remove progress bar
     print("\r", end="")
@@ -134,9 +147,30 @@ def print_result(year_data: dict[int, YearData]) -> None:
     print("\n".join(to_print))
 
 
+def plot_results(year_data: dict[int, YearData], genre_name: str) -> None:
+    """Plot the results via matplotlib."""
+    years = list(year_data.keys())
+    percentages = [data["percent"] for data in year_data.values()]
+
+    # line plot
+    plt.figure(figsize=(10, 6))
+    plt.plot(years, percentages, marker="o", linestyle="-", color="b", label=genre_name)
+
+    plt.title(get_header(genre_name))
+    plt.xlabel("Year")
+    plt.ylabel("Percent")
+
+    plt.grid(visible=True)
+    plt.legend()
+    plt.show()
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     genre_name, start_year = sys.argv[1], int(sys.argv[2])
     year_data = get_data_per_year(genre_name, start_year)
-    print_result(year_data)
+    header = get_header(genre_name)
+
+    print_result_to_terminal(year_data, header)
+    plot_results(year_data, genre_name)
