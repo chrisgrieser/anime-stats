@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import sys
 from time import sleep
 from typing import TypedDict
@@ -12,10 +13,7 @@ from . import caching
 
 # ──────────────────────────────────────────────────────────────────────────────
 
-# CONFIG
-start_year = 2014
-end_year = 2024
-
+# CONFIG excluded genres
 # disabled when set to falsy values
 genre_exclude_id = 0
 genre_exclude_name = ""
@@ -60,11 +58,12 @@ class YearData(TypedDict):
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-def get_data_per_year(genre_id: int) -> dict[int, YearData]:
+def get_data_per_year(genre_id: int, start_year: int) -> dict[int, YearData]:
     """Get the total number of shows per year.
 
     DOCS https://docs.api.jikan.moe/#tag/anime/operation/getAnimeSearch
     """
+    end_year = datetime.datetime.now(tz=datetime.UTC).year  # current year
     year_data: dict[int, YearData] = {}
 
     for year in range(start_year, end_year + 1):
@@ -138,5 +137,6 @@ def print_result(year_data: dict[int, YearData]) -> None:
 if __name__ == "__main__":
     genre_name = sys.argv[1]
     genre_id = get_genre_id(genre_name)
-    year_data = get_data_per_year(genre_id)
+    start_year = int(sys.argv[2])
+    year_data = get_data_per_year(genre_id, start_year)
     print_result(year_data)

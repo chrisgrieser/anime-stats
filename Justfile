@@ -1,6 +1,7 @@
 set quiet := true
 
 genre := "Isekai"
+start_year := "2014"
 
 #───────────────────────────────────────────────────────────────────────────────
 
@@ -15,11 +16,11 @@ run_fzf:
         echo
     fi
     source ./.venv/bin/activate
-    python3 -m python.main "$genre"
+    python3 -m python.main "$genre" "{{ start_year }}"
 
 run:
     #!/usr/bin/env zsh
-    python3 -m python.main "{{ genre }}"
+    python3 -m python.main "{{ genre }}" "{{ start_year }}"
     source ./.venv/bin/activate
 
 init:

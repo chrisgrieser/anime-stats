@@ -16,7 +16,7 @@ python3 -m python.main "$genre"
 ```bash
 # using `just`
 just init
-just run genre="Romance" # available genres: https://api.jikan.moe/v4/genres/anime
+just genre="Romance" start_year=2014 run # available genres: https://api.jikan.moe/v4/genres/anime
 just run_fzf # using `fzf` and `yq`, select a genre interactively
 ```
 
