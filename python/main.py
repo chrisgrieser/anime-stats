@@ -36,12 +36,13 @@ def make_jikan_api_call(url: str, api_cache: dict[str, object]) -> tuple[object,
         return api_cache[url], api_cache
 
     # wait for rate limit, 3 calls per second https://docs.api.jikan.moe/#section/Information/Rate-Limiting
-    sleep(0.8)
+    sleep(0.5)
 
     # make request
     response = requests.get(url, timeout=10)
     http_status_success = 200
     if response.status_code != http_status_success:
+        print("\r", flush=True, end="")
         print("Error:", response.status_code, response.reason)
         sys.exit(1)
 
@@ -105,7 +106,7 @@ def get_genre_id(genre_name: str) -> int:
     )
     if not genre:
         print("\r", flush=True, end="")
-        print(f'Genre "{genre_name}" not found')
+        print(f'Genre "{genre_name}" not found.')
         sys.exit(1)
 
     caching.write(api_cache)
@@ -114,7 +115,7 @@ def get_genre_id(genre_name: str) -> int:
 
 def print_result(year_data: dict[int, YearData]) -> None:
     """Remove the progress bar and print the result."""
-    header = [genre_name, "per year"]
+    header = [f'"{genre_name}"', "per year"]
     if genre_exclude_id:
         header.append(f"(excluding {genre_exclude_name})")
     to_print: list[str] = [" ".join(header)]
@@ -133,6 +134,7 @@ def print_result(year_data: dict[int, YearData]) -> None:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+
 if __name__ == "__main__":
     genre_name = sys.argv[1]
     genre_id = get_genre_id(genre_name)
