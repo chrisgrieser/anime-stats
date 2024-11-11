@@ -1,6 +1,11 @@
 # Anime Stats
 Auto-generate some simple statistics on anime.
 
+`myanimelist` themselves compiled [some numbers on the rising number of 
+isekais](https://www.youtube.com/channel/UCU0aTuvkzjJA9Xajnpa0AWw/community?lb=UgkxpZ0Q_5rJ2fAa7MZ9ow-1ipf4m136jMAX).
+However, they have not factored in the increasing total number of shows 
+per year, which sparked my curiosity and led to this small project. 
+
 <!-- toc -->
 
 - [Usage](#usage)
