@@ -21,7 +21,7 @@ def make_jikan_api_call(url: str) -> dict[str, object]:
     response = requests.get(url, timeout=10)
     http_status_success = 200
     if response.status_code != http_status_success:
-        print("\r", flush=True, end="")
+        progressbar.remove()
         print("Error:", response.status_code, response.reason)
         sys.exit(1)
 
@@ -91,7 +91,7 @@ def get_genre_id(genre_name: str) -> int:
 
     genre: dict[str, str] | None = next((el for el in genre_data if el["name"] == genre_name), None)  # pyright: ignore [reportUnknownArgumentType,reportUnknownVariableType,reportGeneralTypeIssues]
     if not genre:
-        print("\r", flush=True, end="")
+        progressbar.remove()
         print(f'Genre "{genre_name}" not found.')
         sys.exit(1)
 

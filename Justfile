@@ -26,6 +26,7 @@ run_fzf:
 flush_cache:
     rm -vrf ./cache
 
+[macos]
 open_api_docs:
     open "https://docs.api.jikan.moe/"
 
