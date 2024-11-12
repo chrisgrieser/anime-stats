@@ -39,7 +39,7 @@ def get_data_per_year(genre_name: str, start_year: int) -> dict[str, object]:
     progressbar.init(len(year_range) * 2 + 1)  # 2 per year, +1 for genre
 
     genre_id = get_genre_id(genre_name)
-    year_data = caching.read("year_data.json")
+    year_data = caching.read_json("year_data")
 
     for y in year_range:
         # init
@@ -72,7 +72,7 @@ def get_data_per_year(genre_name: str, start_year: int) -> dict[str, object]:
         year_data[year][genre_name + "_percent"] = round(of_genre / total * 100)  # pyright: ignore [reportUnknownArgumentType,reportIndexIssue]
 
     year_data = dict(sorted(year_data.items()))  # sorting in case of caching
-    caching.write("year_data.json", year_data)
+    caching.write_json("year_data.json", year_data)
 
     return year_data
 
@@ -82,7 +82,7 @@ def get_genre_id(genre_name: str) -> int:
 
     https://docs.api.jikan.moe/#tag/genres/operation/getAnimeGenres
     """
-    genre_data = caching.read("genres.json")
+    genre_data = caching.read_json("genres")
     if len(genre_data) == 0:
         progressbar.increment()
         genre_data = make_jikan_api_call("https://api.jikan.moe/v4/genres/anime")["data"]
@@ -95,7 +95,7 @@ def get_genre_id(genre_name: str) -> int:
         print(f'Genre "{genre_name}" not found.')
         sys.exit(1)
 
-    caching.write("genres.json", genre_data)  # pyright: ignore [reportArgumentType]
+    caching.write_json("genres.json", genre_data)  # pyright: ignore [reportArgumentType]
     return genre["mal_id"]  # pyright: ignore [reportUnknownVariableType]
 
 

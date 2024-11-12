@@ -5,12 +5,19 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+# ──────────────────────────────────────────────────────────────────────────────
+
 CACHE_PATH = "./cache"
 
+# ──────────────────────────────────────────────────────────────────────────────
 
-def read(cachename: str) -> dict[str, object]:
+
+def read_json(cache_name: str) -> dict[str, object]:
     """Read the cache file."""
-    path = Path(CACHE_PATH + "/" + cachename)
+    if cache_name.endswith(".json"):
+        cache_name = cache_name[:-5]
+    path = Path(CACHE_PATH + "/" + cache_name + ".json")
+
     if path.exists():
         with path.open("r") as f:
             cache: dict[str, object] = json.load(f)
@@ -19,9 +26,12 @@ def read(cachename: str) -> dict[str, object]:
     return cache
 
 
-def write(cachename: str, cache: dict[str, object]) -> None:
+def write_json(cache_name: str, cache: dict[str, object]) -> None:
     """Write the cache file."""
-    path = Path(CACHE_PATH + "/" + cachename)
+    if cache_name.endswith(".json"):
+        cache_name = cache_name[:-5]
+    path = Path(CACHE_PATH + "/" + cache_name + ".json")
+
     Path.mkdir(path.parent, exist_ok=True)
     with path.open("w") as f:
         json.dump(cache, f)
