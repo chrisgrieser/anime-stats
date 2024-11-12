@@ -120,9 +120,7 @@ def print_result_to_terminal(year_data: dict[str, object], genre: str, start_yea
         to_print.append(f"{year}: {of_genre}/{total} ({percent}%)")
 
     # remove progress bar
-    print("\r", end="")
-    print(" " * len(to_print * 2), end="")
-    print("\r", flush=True, end="")
+    print("\r" + " " * len(to_print * 2) + "\r", end="", flush=True)
 
     print("\n".join(to_print))
 
@@ -135,18 +133,16 @@ def plot_results(year_data: dict[str, object], genre: str, start_year: int) -> N
     years = list(year_data.keys())
     percentages = [data[genre + "_percent"] for data in year_data.values()]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
 
+    # base plot
     plt.figure(figsize=(10, 6))
     plt.plot(years, percentages, marker="o", linestyle="-", color="b", label=genre)  # pyright: ignore [reportUnknownArgumentType]
 
+    # labels
     plt.title(f'"{genre}" per year')
-    plt.figtext(
-        0.1,
-        0.01,
-        "Data: myanimelist (via Jikan API).\nSource Code: https://github.com/chrisgrieser/anime-stats",
-        fontsize=8,
-    )
+    footer = "Data: myanimelist (via Jikan API).\nSource Code: https://github.com/chrisgrieser/anime-stats"
+    plt.figtext(0.1, 0.01, footer, fontsize=8)
     plt.xlabel("Year")
-    plt.ylabel("Percent")
+    plt.ylabel(f"Share of {genre} to total releases")
 
     plt.grid(visible=True)
     plt.legend()
@@ -156,8 +152,8 @@ def plot_results(year_data: dict[str, object], genre: str, start_year: int) -> N
 # ──────────────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    genre_name, start_year = sys.argv[1], int(sys.argv[2])
-    year_data = get_data_per_year(genre_name, start_year)
+    genre, start_year = sys.argv[1], int(sys.argv[2])
+    year_data = get_data_per_year(genre, start_year)
 
-    print_result_to_terminal(year_data, genre_name, start_year)
-    plot_results(year_data, genre_name, start_year)
+    print_result_to_terminal(year_data, genre, start_year)
+    plot_results(year_data, genre, start_year)

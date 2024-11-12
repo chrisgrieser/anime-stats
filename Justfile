@@ -1,6 +1,6 @@
 set quiet := true
 
-genre := "Isekai"
+genre := "Romance"
 start_year := "2014"
 
 #───────────────────────────────────────────────────────────────────────────────
@@ -16,8 +16,6 @@ run_fzf:
         fi
     else
         genre="{{ genre }}"
-        echo "No Terminal detected, using default genre: $genre"
-        echo
     fi
     source ./.venv/bin/activate
     python3 -m python.main "$genre" "{{ start_year }}"

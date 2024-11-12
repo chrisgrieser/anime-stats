@@ -24,7 +24,8 @@ python3 -m pip install -r requirements.txt
 
 # run
 genre="Romance"
-python3 -m python.main "$genre"
+start_year="2014"
+python3 -m python.main "$genre" "$start_year"
 ```
 
 Using the task runner [just](https://just.systems/man/en/):
