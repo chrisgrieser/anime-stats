@@ -13,13 +13,6 @@ from . import caching
 
 # ──────────────────────────────────────────────────────────────────────────────
 
-# CONFIG excluded genres
-# disabled when set to falsy values
-genre_exclude_id = 0
-genre_exclude_name = ""
-
-# ──────────────────────────────────────────────────────────────────────────────
-
 
 def progressbar(char: str) -> None:
     """Simple progress bar."""
@@ -58,7 +51,7 @@ def get_data_per_year(genre_name: str, start_year: int) -> dict[str, object]:
     for y in range(start_year, end_year + 1):
         # init
         api_url = "https://api.jikan.moe/v4/anime?"
-        year = str(y) # using string keys for proper overwriting
+        year = str(y)  # using string keys for proper overwriting
         if year not in year_data:
             year_data[year] = {}
 
@@ -75,8 +68,6 @@ def get_data_per_year(genre_name: str, start_year: int) -> dict[str, object]:
 
         # of genre
         api_url += api_url + f"&genres={genre_id}"
-        if genre_exclude_id:
-            api_url += f"&genres_exclude={genre_exclude_id}"
         of_genre: int
         if genre_name in year_data[year]:  # pyright: ignore [reportOperatorIssue]
             progressbar("▰")
@@ -87,7 +78,7 @@ def get_data_per_year(genre_name: str, start_year: int) -> dict[str, object]:
             year_data[year][genre_name] = of_genre  # pyright: ignore [reportIndexIssue]
         year_data[year][genre_name + "_percent"] = round(of_genre / total * 100)  # pyright: ignore [reportUnknownArgumentType,reportIndexIssue]
 
-    year_data = dict(sorted(year_data.items())) # sorting in case of caching
+    year_data = dict(sorted(year_data.items()))  # sorting in case of caching
     caching.write("year_data.json", year_data)
 
     return year_data
@@ -118,17 +109,9 @@ def get_genre_id(genre_name: str) -> int:
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-def get_header(genre_name: str) -> str:
-    """Get the header for the output."""
-    header_parts = [f'"{genre_name}"', "per year"]
-    if genre_exclude_id:
-        header_parts.append(f"(excluding {genre_exclude_name})")
-    return " ".join(header_parts)
-
-
-def print_result_to_terminal(year_data: dict[str, object], header: str, genre: str, start_year: int) -> None:
+def print_result_to_terminal(year_data: dict[str, object], genre: str, start_year: int) -> None:
     """Remove the progress bar and print the result."""
-    to_print: list[str] = [header]
+    to_print: list[str] = [f'"{genre}" per year']
 
     for year, d in year_data.items():
         if int(year) < start_year:
@@ -155,7 +138,7 @@ def plot_results(year_data: dict[str, object], genre: str, start_year: int) -> N
     plt.figure(figsize=(10, 6))
     plt.plot(years, percentages, marker="o", linestyle="-", color="b", label=genre)  # pyright: ignore [reportUnknownArgumentType]
 
-    plt.title(get_header(genre))
+    plt.title(f'"{genre}" per year')
     plt.xlabel("Year")
     plt.ylabel("Percent")
 
@@ -169,7 +152,6 @@ def plot_results(year_data: dict[str, object], genre: str, start_year: int) -> N
 if __name__ == "__main__":
     genre_name, start_year = sys.argv[1], int(sys.argv[2])
     year_data = get_data_per_year(genre_name, start_year)
-    header = get_header(genre_name)
 
-    print_result_to_terminal(year_data, header, genre_name, start_year)
+    print_result_to_terminal(year_data, genre_name, start_year)
     plot_results(year_data, genre_name, start_year)
