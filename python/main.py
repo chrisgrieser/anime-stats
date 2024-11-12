@@ -132,13 +132,15 @@ def plot_results(year_data: dict[str, object], genre: str, start_year: int) -> N
 
     years = list(year_data.keys())
     percentages = [data[genre + "_percent"] for data in year_data.values()]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
+    title = f"{genre} per year"
 
     # base plot
-    plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(10, 6))
     plt.plot(years, percentages, marker="o", linestyle="-", color="b", label=genre)  # pyright: ignore [reportUnknownArgumentType]
 
     # labels
-    plt.title(f'"{genre}" per year')
+    fig.canvas.manager.set_window_title(title)  # pyright: ignore [reportOptionalMemberAccess], https://github.com/matplotlib/matplotlib/issues/27774
+    plt.title(title)
     footer = "Data: myanimelist (via Jikan API).\nSource Code: https://github.com/chrisgrieser/anime-stats"
     plt.figtext(0.1, 0.01, footer, fontsize=8)
     plt.xlabel("Year")
