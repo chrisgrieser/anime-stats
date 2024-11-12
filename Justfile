@@ -23,6 +23,12 @@ run_fzf:
     source ./.venv/bin/activate
     python3 -m python.main "$genre" "$start_year"
 
+flush_cache:
+    rm -vrf ./cache
+
+open_api_docs:
+    open "https://docs.api.jikan.moe/"
+
 run:
     #!/usr/bin/env zsh
     python3 -m python.main "{{ genre }}" "{{ start_year }}"
@@ -32,9 +38,3 @@ init:
     [[ ! -d ./.venv ]] || rm -rf ./.venv
     python3 -m venv ./.venv
     source ./.venv/bin/activate && python3 -m pip install -r requirements.txt
-
-flush_cache:
-    rm -vrf ./cache
-
-open_api_docs:
-    open "https://docs.api.jikan.moe/"

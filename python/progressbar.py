@@ -1,4 +1,4 @@
-"""Simple progress bar for the temrinal."""
+"""Simple progress bar for the terminal."""
 
 EMPTY_CHAR = "─"
 CHAR = "■"
