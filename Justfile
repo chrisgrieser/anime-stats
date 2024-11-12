@@ -1,6 +1,6 @@
 set quiet := true
 
-genre := "Romance"
+genre := "Isekai"
 start_year := "2014"
 
 #───────────────────────────────────────────────────────────────────────────────
@@ -14,11 +14,14 @@ run_fzf:
             echo "No genre selected, aborting."
             return
         fi
+        start_year="{{ start_year }}"
     else
+        # fallback when not connected to terminal, e.g., via IDE task runner
         genre="{{ genre }}"
+        start_year=2019
     fi
     source ./.venv/bin/activate
-    python3 -m python.main "$genre" "{{ start_year }}"
+    python3 -m python.main "$genre" "$start_year"
 
 run:
     #!/usr/bin/env zsh

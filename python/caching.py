@@ -5,10 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-# CONFIG
 CACHE_PATH = "./cache"
-
-# ──────────────────────────────────────────────────────────────────────────────
 
 
 def read(cachename: str) -> dict[str, object]:

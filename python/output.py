@@ -1,18 +1,10 @@
-"""Docstring."""
+"""Output to terminal or matplotlib."""
 
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
 
-# ──────────────────────────────────────────────────────────────────────────────
-
-
-def progressbar(char: str = "*", clean_chars: int = 0) -> None:
-    """Simple progress bar."""
-    if clean_chars > 0:
-        print("\r" + " " * clean_chars + "\r", end="", flush=True)
-        return
-    print(char, end="", flush=True)
+from . import progressbar
 
 
 def print_to_terminal(year_data: dict[str, object], genre: str, start_year: int) -> None:
@@ -25,7 +17,7 @@ def print_to_terminal(year_data: dict[str, object], genre: str, start_year: int)
         of_genre, total, percent = d[genre], d["total"], d[genre + "_percent"]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
         to_print.append(f"{year}: {of_genre}/{total} ({percent}%)")
 
-    progressbar(clean_chars=len(to_print * 2))  # remove progress bar
+    progressbar.remove()
     print("\n".join(to_print))
 
 

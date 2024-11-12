@@ -8,7 +8,7 @@ from time import sleep
 
 import requests
 
-from . import caching, output
+from . import caching, output, progressbar
 
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -35,11 +35,13 @@ def get_data_per_year(genre_name: str, start_year: int) -> dict[str, object]:
     DOCS https://docs.api.jikan.moe/#tag/anime/operation/getAnimeSearch
     """
     end_year = datetime.datetime.now(tz=datetime.UTC).year  # current year
-    genre_id = get_genre_id(genre_name)
+    year_range = range(start_year, end_year + 1)
+    progressbar.init(len(year_range) * 2 + 1)  # 2 per year, +1 for genre
 
+    genre_id = get_genre_id(genre_name)
     year_data = caching.read("year_data.json")
 
-    for y in range(start_year, end_year + 1):
+    for y in year_range:
         # init
         api_url = "https://api.jikan.moe/v4/anime?"
         year = str(y)  # using string keys for proper overwriting
@@ -50,10 +52,10 @@ def get_data_per_year(genre_name: str, start_year: int) -> dict[str, object]:
         api_url += f"start_date={year}-01-01&end_date={year}-12-31&type=tv"
         total: int
         if "total" in year_data[year]:  # pyright: ignore [reportOperatorIssue]
-            output.progressbar("▰")
+            progressbar.increment(from_cache=True)
             total = year_data[year]["total"]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
         else:
-            output.progressbar("▱")
+            progressbar.increment()
             total = make_jikan_api_call(api_url)["pagination"]["items"]["total"]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
             year_data[year]["total"] = total  # pyright: ignore [reportIndexIssue]
 
@@ -61,10 +63,10 @@ def get_data_per_year(genre_name: str, start_year: int) -> dict[str, object]:
         api_url += api_url + f"&genres={genre_id}"
         of_genre: int
         if genre_name in year_data[year]:  # pyright: ignore [reportOperatorIssue]
-            output.progressbar("▰")
+            progressbar.increment(from_cache=True)
             of_genre = year_data[year][genre_name]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
         else:
-            output.progressbar("▱")
+            progressbar.increment()
             of_genre = make_jikan_api_call(api_url)["pagination"]["items"]["total"]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
             year_data[year][genre_name] = of_genre  # pyright: ignore [reportIndexIssue]
         year_data[year][genre_name + "_percent"] = round(of_genre / total * 100)  # pyright: ignore [reportUnknownArgumentType,reportIndexIssue]
@@ -82,10 +84,10 @@ def get_genre_id(genre_name: str) -> int:
     """
     genre_data = caching.read("genres.json")
     if len(genre_data) == 0:
-        output.progressbar("▱")
+        progressbar.increment()
         genre_data = make_jikan_api_call("https://api.jikan.moe/v4/genres/anime")["data"]
     else:
-        output.progressbar("▰")
+        progressbar.increment(from_cache=True)
 
     genre: dict[str, str] | None = next((el for el in genre_data if el["name"] == genre_name), None)  # pyright: ignore [reportUnknownArgumentType,reportUnknownVariableType,reportGeneralTypeIssues]
     if not genre:
