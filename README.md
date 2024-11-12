@@ -1,10 +1,10 @@
 # Anime Stats
 Auto-generate some simple statistics on anime.
 
-`myanimelist` themselves compiled [some numbers on the rising number of 
+`myanimelist` themselves compiled [some numbers on the rising number of
 isekais](https://www.youtube.com/channel/UCU0aTuvkzjJA9Xajnpa0AWw/community?lb=UgkxpZ0Q_5rJ2fAa7MZ9ow-1ipf4m136jMAX).
-However, they have not factored in the increasing total number of shows 
-per year, which sparked my curiosity and led to this small project. 
+However, they have not factored in the increasing total number of shows per
+year, which sparked my curiosity and led to this small project.
 
 <!-- toc -->
 
@@ -28,6 +28,7 @@ python3 -m python.main "$genre"
 ```
 
 Using the task runner [just](https://just.systems/man/en/):
+
 ```bash
 just init
 just genre="Romance" start_year=2014 run

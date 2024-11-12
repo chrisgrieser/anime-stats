@@ -5,7 +5,6 @@ from __future__ import annotations
 import datetime
 import sys
 from time import sleep
-from typing import TypedDict
 
 import matplotlib.pyplot as plt
 import requests
@@ -22,22 +21,16 @@ genre_exclude_name = ""
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-def make_jikan_api_call(url: str, api_cache: dict[str, object]) -> tuple[object, dict[str, object]]:
-    """Check cache, if API call is not in cache, make a jikan API call.
+def progressbar(char: str) -> None:
+    """Simple progress bar."""
+    print(char, end="", flush=True)
 
-    Return the response and the updated cache.
-    """
-    # simple progress bar
-    progress_char = "▰" if url in api_cache else "▱"
-    print(progress_char, end="", flush=True)
 
-    if url in api_cache:
-        return api_cache[url], api_cache
+def make_jikan_api_call(url: str) -> dict[str, object]:
+    """Make a jikan API call."""
+    # wait for rate limit (3 per sec) https://docs.api.jikan.moe/#section/Information/Rate-Limiting
+    sleep(0.8)
 
-    # wait for rate limit, 3 calls per second https://docs.api.jikan.moe/#section/Information/Rate-Limiting
-    sleep(0.65)
-
-    # make request
     response = requests.get(url, timeout=10)
     http_status_success = 200
     if response.status_code != http_status_success:
@@ -45,22 +38,14 @@ def make_jikan_api_call(url: str, api_cache: dict[str, object]) -> tuple[object,
         print("Error:", response.status_code, response.reason)
         sys.exit(1)
 
-    api_cache[url] = response.json()
-    return response.json(), api_cache
-
-
-class YearData(TypedDict):
-    """Data for a year."""
-
-    total: int
-    of_genre: int
-    percent: float
+    json: dict[str, object] = response.json()
+    return json
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-def get_data_per_year(genre_name: str, start_year: int) -> dict[int, YearData]:
+def get_data_per_year(genre_name: str, start_year: int) -> dict[str, object]:
     """Get the total number of shows per year.
 
     DOCS https://docs.api.jikan.moe/#tag/anime/operation/getAnimeSearch
@@ -68,30 +53,42 @@ def get_data_per_year(genre_name: str, start_year: int) -> dict[int, YearData]:
     end_year = datetime.datetime.now(tz=datetime.UTC).year  # current year
     genre_id = get_genre_id(genre_name)
 
-    year_data: dict[int, YearData] = {}
+    year_data = caching.read("year_data.json")
 
-    for year in range(start_year, end_year + 1):
-        base_api = "https://api.jikan.moe/v4"
-        api_cache = caching.read()
+    for y in range(start_year, end_year + 1):
+        # init
+        api_url = "https://api.jikan.moe/v4/anime?"
+        year = str(y) # using string keys for proper overwriting
+        if year not in year_data:
+            year_data[year] = {}
 
-        api_url = f"{base_api}/anime?start_date={year}-01-01&end_date={year}-12-31&type=tv"
-        total_for_year, api_cache = make_jikan_api_call(api_url, api_cache)
+        # total
+        api_url += f"start_date={year}-01-01&end_date={year}-12-31&type=tv"
+        total: int
+        if "total" in year_data[year]:  # pyright: ignore [reportOperatorIssue]
+            progressbar("▰")
+            total = year_data[year]["total"]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
+        else:
+            progressbar("▱")
+            total = make_jikan_api_call(api_url)["pagination"]["items"]["total"]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
+            year_data[year]["total"] = total  # pyright: ignore [reportIndexIssue]
 
+        # of genre
         api_url += api_url + f"&genres={genre_id}"
         if genre_exclude_id:
             api_url += f"&genres_exclude={genre_exclude_id}"
-        of_genre_for_year, api_cache = make_jikan_api_call(api_url, api_cache)
+        of_genre: int
+        if genre_name in year_data[year]:  # pyright: ignore [reportOperatorIssue]
+            progressbar("▰")
+            of_genre = year_data[year][genre_name]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
+        else:
+            progressbar("▱")
+            of_genre = make_jikan_api_call(api_url)["pagination"]["items"]["total"]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
+            year_data[year][genre_name] = of_genre  # pyright: ignore [reportIndexIssue]
+        year_data[year][genre_name + "_percent"] = round(of_genre / total * 100)  # pyright: ignore [reportUnknownArgumentType,reportIndexIssue]
 
-        of_genre: int = of_genre_for_year["pagination"]["items"]["total"]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
-        total: int = total_for_year["pagination"]["items"]["total"]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
-
-        year_data[year] = {
-            "of_genre": of_genre,
-            "total": total,
-            "percent": round(of_genre / total * 100),  # pyright: ignore [reportUnknownArgumentType]
-        }
-
-        caching.write(api_cache)
+    year_data = dict(sorted(year_data.items())) # sorting in case of caching
+    caching.write("year_data.json", year_data)
 
     return year_data
 
@@ -101,22 +98,20 @@ def get_genre_id(genre_name: str) -> int:
 
     https://docs.api.jikan.moe/#tag/genres/operation/getAnimeGenres
     """
-    cache = caching.read()
-    genre_data, api_cache = make_jikan_api_call("https://api.jikan.moe/v4/genres/anime", cache)
-    genre: int | None = next(  # pyright: ignore [reportUnknownVariableType]
-        (
-            el
-            for el in genre_data["data"]  # pyright: ignore [reportIndexIssue,reportUnknownArgumentType,reportUnknownVariableType]
-            if el["name"].lower() == genre_name.lower()
-        ),
-        None,
-    )
+    genre_data = caching.read("genres.json")
+    if len(genre_data) == 0:
+        progressbar("▱")
+        genre_data = make_jikan_api_call("https://api.jikan.moe/v4/genres/anime")["data"]
+    else:
+        progressbar("▰")
+
+    genre: dict[str, str] | None = next((el for el in genre_data if el["name"] == genre_name), None)  # pyright: ignore [reportUnknownArgumentType,reportUnknownVariableType,reportGeneralTypeIssues]
     if not genre:
         print("\r", flush=True, end="")
         print(f'Genre "{genre_name}" not found.')
         sys.exit(1)
 
-    caching.write(api_cache)
+    caching.write("genres.json", genre_data)  # pyright: ignore [reportArgumentType]
     return genre["mal_id"]  # pyright: ignore [reportUnknownVariableType]
 
 
@@ -131,12 +126,14 @@ def get_header(genre_name: str) -> str:
     return " ".join(header_parts)
 
 
-def print_result_to_terminal(year_data: dict[int, YearData], header: str) -> None:
+def print_result_to_terminal(year_data: dict[str, object], header: str, genre: str, start_year: int) -> None:
     """Remove the progress bar and print the result."""
     to_print: list[str] = [header]
 
-    for year, data in year_data.items():
-        of_genre, total, percent = data["of_genre"], data["total"], data["percent"]
+    for year, d in year_data.items():
+        if int(year) < start_year:
+            continue
+        of_genre, total, percent = d[genre], d["total"], d[genre + "_percent"]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
         to_print.append(f"{year}: {of_genre}/{total} ({percent}%)")
 
     # remove progress bar
@@ -147,16 +144,18 @@ def print_result_to_terminal(year_data: dict[int, YearData], header: str) -> Non
     print("\n".join(to_print))
 
 
-def plot_results(year_data: dict[int, YearData], genre_name: str) -> None:
+def plot_results(year_data: dict[str, object], genre: str, start_year: int) -> None:
     """Plot the results via matplotlib."""
+    # filter only years >= start_year
+    year_data = {year: data for year, data in year_data.items() if int(year) >= start_year}
+
     years = list(year_data.keys())
-    percentages = [data["percent"] for data in year_data.values()]
+    percentages = [data[genre + "_percent"] for data in year_data.values()]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
 
-    # line plot
     plt.figure(figsize=(10, 6))
-    plt.plot(years, percentages, marker="o", linestyle="-", color="b", label=genre_name)
+    plt.plot(years, percentages, marker="o", linestyle="-", color="b", label=genre)  # pyright: ignore [reportUnknownArgumentType]
 
-    plt.title(get_header(genre_name))
+    plt.title(get_header(genre))
     plt.xlabel("Year")
     plt.ylabel("Percent")
 
@@ -172,5 +171,5 @@ if __name__ == "__main__":
     year_data = get_data_per_year(genre_name, start_year)
     header = get_header(genre_name)
 
-    print_result_to_terminal(year_data, header)
-    plot_results(year_data, genre_name)
+    print_result_to_terminal(year_data, header, genre_name, start_year)
+    plot_results(year_data, genre_name, start_year)
