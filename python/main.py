@@ -6,17 +6,11 @@ import datetime
 import sys
 from time import sleep
 
-import matplotlib.pyplot as plt
 import requests
 
-from . import caching
+from . import caching, output
 
 # ──────────────────────────────────────────────────────────────────────────────
-
-
-def progressbar(char: str) -> None:
-    """Simple progress bar."""
-    print(char, end="", flush=True)
 
 
 def make_jikan_api_call(url: str) -> dict[str, object]:
@@ -33,9 +27,6 @@ def make_jikan_api_call(url: str) -> dict[str, object]:
 
     json: dict[str, object] = response.json()
     return json
-
-
-# ──────────────────────────────────────────────────────────────────────────────
 
 
 def get_data_per_year(genre_name: str, start_year: int) -> dict[str, object]:
@@ -59,10 +50,10 @@ def get_data_per_year(genre_name: str, start_year: int) -> dict[str, object]:
         api_url += f"start_date={year}-01-01&end_date={year}-12-31&type=tv"
         total: int
         if "total" in year_data[year]:  # pyright: ignore [reportOperatorIssue]
-            progressbar("▰")
+            output.progressbar("▰")
             total = year_data[year]["total"]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
         else:
-            progressbar("▱")
+            output.progressbar("▱")
             total = make_jikan_api_call(api_url)["pagination"]["items"]["total"]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
             year_data[year]["total"] = total  # pyright: ignore [reportIndexIssue]
 
@@ -70,10 +61,10 @@ def get_data_per_year(genre_name: str, start_year: int) -> dict[str, object]:
         api_url += api_url + f"&genres={genre_id}"
         of_genre: int
         if genre_name in year_data[year]:  # pyright: ignore [reportOperatorIssue]
-            progressbar("▰")
+            output.progressbar("▰")
             of_genre = year_data[year][genre_name]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
         else:
-            progressbar("▱")
+            output.progressbar("▱")
             of_genre = make_jikan_api_call(api_url)["pagination"]["items"]["total"]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
             year_data[year][genre_name] = of_genre  # pyright: ignore [reportIndexIssue]
         year_data[year][genre_name + "_percent"] = round(of_genre / total * 100)  # pyright: ignore [reportUnknownArgumentType,reportIndexIssue]
@@ -91,10 +82,10 @@ def get_genre_id(genre_name: str) -> int:
     """
     genre_data = caching.read("genres.json")
     if len(genre_data) == 0:
-        progressbar("▱")
+        output.progressbar("▱")
         genre_data = make_jikan_api_call("https://api.jikan.moe/v4/genres/anime")["data"]
     else:
-        progressbar("▰")
+        output.progressbar("▰")
 
     genre: dict[str, str] | None = next((el for el in genre_data if el["name"] == genre_name), None)  # pyright: ignore [reportUnknownArgumentType,reportUnknownVariableType,reportGeneralTypeIssues]
     if not genre:
@@ -108,54 +99,9 @@ def get_genre_id(genre_name: str) -> int:
 
 # ──────────────────────────────────────────────────────────────────────────────
 
-
-def print_result_to_terminal(year_data: dict[str, object], genre: str, start_year: int) -> None:
-    """Remove the progress bar and print the result."""
-    to_print: list[str] = [f'"{genre}" per year']
-
-    for year, d in year_data.items():
-        if int(year) < start_year:
-            continue
-        of_genre, total, percent = d[genre], d["total"], d[genre + "_percent"]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
-        to_print.append(f"{year}: {of_genre}/{total} ({percent}%)")
-
-    # remove progress bar
-    print("\r" + " " * len(to_print * 2) + "\r", end="", flush=True)
-
-    print("\n".join(to_print))
-
-
-def plot_results(year_data: dict[str, object], genre: str, start_year: int) -> None:
-    """Plot the results via matplotlib."""
-    # filter only years >= start_year
-    year_data = {year: data for year, data in year_data.items() if int(year) >= start_year}
-
-    years = list(year_data.keys())
-    percentages = [data[genre + "_percent"] for data in year_data.values()]  # pyright: ignore [reportIndexIssue,reportUnknownVariableType]
-    title = f"{genre} per year"
-
-    # base plot
-    fig = plt.figure(figsize=(10, 6))
-    plt.plot(years, percentages, marker="o", linestyle="-", color="b", label=genre)  # pyright: ignore [reportUnknownArgumentType]
-
-    # labels
-    fig.canvas.manager.set_window_title(title)  # pyright: ignore [reportOptionalMemberAccess], https://github.com/matplotlib/matplotlib/issues/27774
-    plt.title(title)
-    footer = "Data: myanimelist (via Jikan API).\nSource Code: https://github.com/chrisgrieser/anime-stats"
-    plt.figtext(0.1, 0.01, footer, fontsize=8)
-    plt.xlabel("Year")
-    plt.ylabel(f"Share of {genre} to total releases")
-
-    plt.grid(visible=True)
-    plt.legend()
-    plt.show()
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-
 if __name__ == "__main__":
     genre, start_year = sys.argv[1], int(sys.argv[2])
     year_data = get_data_per_year(genre, start_year)
 
-    print_result_to_terminal(year_data, genre, start_year)
-    plot_results(year_data, genre, start_year)
+    output.print_to_terminal(year_data, genre, start_year)
+    output.plot_results(year_data, genre, start_year)
