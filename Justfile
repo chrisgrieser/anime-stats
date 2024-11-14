@@ -32,8 +32,8 @@ open_api_docs:
 
 run:
     #!/usr/bin/env zsh
-    python3 -m python.main "{{ genre }}" "{{ start_year }}"
     source ./.venv/bin/activate
+    python3 -m python.main "{{ genre }}" "{{ start_year }}"
 
 init:
     [[ ! -d ./.venv ]] || rm -rf ./.venv
