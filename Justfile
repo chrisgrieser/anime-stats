@@ -5,35 +5,27 @@ start_year := "2014"
 
 #───────────────────────────────────────────────────────────────────────────────
 
-run_fzf:
+run-fzf:
     #!/usr/bin/env zsh
-    if test -t 1 ; then
-        genre=$(curl --silent "https://api.jikan.moe/v4/genres/anime" |
-            yq --input-format=json '.data[] | .name' | fzf)
-        if test -z "$genre" ; then
-            echo "No genre selected, aborting."
-            return
-        fi
-        start_year="{{ start_year }}"
-    else
-        # fallback when not connected to terminal, e.g., via IDE task runner
-        genre="{{ genre }}"
-        start_year=2019
-    fi
+    genre=$(curl --silent "https://api.jikan.moe/v4/genres/anime" |
+        yq --input-format=json '.data[] | .name' | fzf)
+    [[ -z "$genre" ]] && return
+    start_year="{{ start_year }}"
     source ./.venv/bin/activate
     python3 -m python.main "$genre" "$start_year"
 
-flush_cache:
+run-streaming:
+    #!/usr/bin/env zsh
+    source ./.venv/bin/activate
+    year=2022 # shorter for quicker debugging
+    python3 -m python.main "{{ genre }}" "$year"
+
+flush-cache:
     rm -vrf ./cache
 
 [macos]
-open_api_docs:
+open-api-docs:
     open "https://docs.api.jikan.moe/"
-
-run:
-    #!/usr/bin/env zsh
-    source ./.venv/bin/activate
-    python3 -m python.main "{{ genre }}" "{{ start_year }}"
 
 init:
     [[ ! -d ./.venv ]] || rm -rf ./.venv
