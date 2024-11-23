@@ -33,7 +33,7 @@ Using the task runner [just](https://just.systems/man/en/):
 ```bash
 just init
 just genre="Romance" start_year=2014 run
-just run_fzf # using `fzf` and `yq`, select a genre interactively
+just run-fzf # using `fzf` and `yq`, select a genre interactively
 ```
 
 > [!NOTE]

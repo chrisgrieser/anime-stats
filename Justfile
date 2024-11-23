@@ -5,6 +5,7 @@ start_year := "2014"
 
 #───────────────────────────────────────────────────────────────────────────────
 
+# interactive
 run-fzf:
     #!/usr/bin/env zsh
     genre=$(curl --silent "https://api.jikan.moe/v4/genres/anime" |
@@ -14,7 +15,8 @@ run-fzf:
     source ./.venv/bin/activate
     python3 -m python.main "$genre" "$start_year"
 
-run-streaming:
+# streaming
+run:
     #!/usr/bin/env zsh
     source ./.venv/bin/activate
     year=2022 # shorter for quicker debugging
