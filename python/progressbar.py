@@ -36,12 +36,13 @@ def increment(*, from_cache: bool = False) -> None:
     """
     bar = state["previous"] + (CHARS["load"] if not from_cache else CHARS["load_from_cache"])
     filled_bar = bar + (state["bar_len"] - len(bar)) * CHARS["empty"]
-    print("\r" + filled_bar, end="", flush=True)
+    # `\33[2K` = full line erasure, `\r` = move cursor to start
+    print("\33[2K\r" + filled_bar, end="", flush=True)
     state["previous"] = bar
 
 
 def remove() -> None:
     """Remove the progress bar and reset the state."""
-    print("\r" + " " * 100 + "\r", end="", flush=True)
+    print("\33[2K\r", end="", flush=True)
     state["previous"] = ""
     state["bar_len"] = 0
